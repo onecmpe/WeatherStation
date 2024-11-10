@@ -1,0 +1,52 @@
+pipeline {
+    agent any
+
+    environment {
+        NODE_VERSION = '20.11.1'
+    }
+
+    stages {
+        stage('Setup') {
+            steps {
+                sh 'npm install'
+            }
+        }
+
+        stage('Lint') {
+            steps {
+                sh 'npm run lint'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                sh 'npm test -- --coverage --reporters=default --reporters=jest-junit'
+            }
+            post {
+                always {
+                    junit 'junit.xml'
+                    publishHTML(target: [
+                        allowMissing: false,
+                        alwaysLinkToLastBuild: false,
+                        keepAll: true,
+                        reportDir: 'coverage/lcov-report',
+                        reportFiles: 'index.html',
+                        reportName: 'Coverage Report'
+                    ])
+                }
+            }
+        }
+
+        stage('Build') {
+            steps {
+                sh 'npm run build'
+            }
+        }
+    }
+
+    post {
+        always {
+            cleanWs()
+        }
+    }
+} 

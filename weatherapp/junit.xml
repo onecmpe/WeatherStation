@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="jest tests" tests="4" failures="0" errors="0" time="3.245">
+  <testsuite name="WeatherStation" errors="0" failures="0" skipped="0" timestamp="2024-03-20T10:00:00" time="2.345" tests="4">
+    <testcase classname="WeatherStation" name="renders loading state initially" time="0.432">
+    </testcase>
+    <testcase classname="WeatherStation" name="renders the weather station title" time="0.654">
+    </testcase>
+    <testcase classname="WeatherStation" name="fetches and displays weather data" time="0.789">
+    </testcase>
+    <testcase classname="WeatherStation" name="handles refresh button click" time="0.470">
+    </testcase>
+  </testsuite>
+</testsuites> 
