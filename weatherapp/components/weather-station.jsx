@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -14,36 +14,81 @@ import {
   ResponsiveContainer
 } from 'recharts'
 
-const generateHourlyData = () => {
-  return Array.from({ length: 24 }, (_, i) => ({
-    hour: i,
-    temperature: Math.round(15 + Math.sin(i / 24 * Math.PI * 2) * 5 + Math.random() * 2)
-  }))
+const fetchWeatherData = async () => {
+  const response = await fetch(
+    'https://api.open-meteo.com/v1/forecast?latitude=37.3394&longitude=-121.895&current=temperature_2m&hourly=temperature_2m&temperature_unit=fahrenheit&timezone=America/Los_Angeles'
+  )
+  return await response.json()
 }
 
-const generateDailyData = () => {
+const formatHourlyData = (data) => {
+  if (!data.hourly || !data.hourly.time || !data.hourly.temperature_2m) {
+    console.error('Invalid data structure:', data)
+    return []
+  }
+
+  const currentHour = new Date().getHours()
+  return data.hourly.time
+    .slice(currentHour, currentHour + 24)
+    .map((time, index) => ({
+      hour: new Date(time).getHours(),
+      temperature: Math.round(data.hourly.temperature_2m[currentHour + index])
+    }))
+}
+
+const generateDailyData = (hourlyData) => {
+  if (!hourlyData.hourly || !hourlyData.hourly.time || !hourlyData.hourly.temperature_2m) {
+    console.error('Invalid hourly data structure:', hourlyData)
+    return []
+  }
+
   const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
   const currentDate = new Date()
-  return days.map((day, index) => {
+  const currentDay = currentDate.getDay()
+  
+  return Array.from({ length: 7 }, (_, index) => {
     const date = new Date(currentDate)
     date.setDate(currentDate.getDate() + index)
+    
+    // Get the 24-hour block for this day
+    const startIndex = index * 24
+    const temperatures = hourlyData.hourly.temperature_2m.slice(startIndex, startIndex + 24)
+    const avgTemp = temperatures.reduce((sum, temp) => sum + temp, 0) / temperatures.length
+
     return {
-      day,
+      day: days[(currentDay + index) % 7],
       date: date.toLocaleDateString(),
-      temperature: Math.round(Math.random() * 10 + 20), // 20-30°C
-      precipitation: Math.round(Math.random() * 50), // 0-50mm
-      rainChance: Math.round(Math.random() * 100) // 0-100%
+      temperature: Math.round(avgTemp)
     }
   })
 }
 
 export default function WeatherStation() {
-  const [hourlyData, setHourlyData] = useState(generateHourlyData())
-  const [dailyData, setDailyData] = useState(generateDailyData())
+  const [hourlyData, setHourlyData] = useState([])
+  const [dailyData, setDailyData] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  const refreshData = () => {
-    setHourlyData(generateHourlyData())
-    setDailyData(generateDailyData())
+  const fetchData = async () => {
+    setLoading(true)
+    try {
+      const data = await fetchWeatherData()
+      console.log('API Response:', data) // Debug log
+      const formattedHourlyData = formatHourlyData(data)
+      console.log('Formatted Hourly Data:', formattedHourlyData) // Debug log
+      setHourlyData(formattedHourlyData)
+      setDailyData(generateDailyData(data))
+    } catch (error) {
+      console.error('Error fetching weather data:', error)
+    }
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    fetchData()
+  }, [])
+
+  if (loading) {
+    return <div>Loading weather data...</div>
   }
 
   return (
@@ -58,16 +103,14 @@ export default function WeatherStation() {
             </CardHeader>
             <CardContent>
               <p className="text-lg">{dayData.date}</p>
-              <p className="text-xl">{dayData.temperature}°C</p>
-              <p>Precipitation: {dayData.precipitation}mm</p>
-              <p>Rain Chance: {dayData.rainChance}%</p>
+              <p className="text-xl">{dayData.temperature}°F</p>
             </CardContent>
           </Card>
         ))}
       </div>
 
       <div className="mb-4">
-        <Button onClick={refreshData}>Refresh Data</Button>
+        <Button onClick={fetchData}>Refresh Data</Button>
       </div>
 
       <Card>
@@ -83,10 +126,10 @@ export default function WeatherStation() {
                 tickFormatter={(hour) => `${hour}:00`}
               />
               <YAxis 
-                label={{ value: 'Temperature (°C)', angle: -90, position: 'insideLeft' }}
+                label={{ value: 'Temperature (°F)', angle: -90, position: 'insideLeft' }}
               />
               <Tooltip 
-                formatter={(value, name) => [`${value}°C`, 'Temperature']}
+                formatter={(value, name) => [`${value}°F`, 'Temperature']}
                 labelFormatter={(hour) => `${hour}:00`}
               />
               <Legend />
