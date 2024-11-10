@@ -1,9 +1,0 @@
-weather_station/
-├── app.py              # Main application file
-├── database.db         # SQLite database file
-├── static/
-│   ├── style.css       # CSS for styling
-│   └── chart.js        # JavaScript for Chart.js
-├── templates/
-│   └── index.html      # Main UI
-└── sensors.py          # Simulated data collection
