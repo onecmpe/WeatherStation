@@ -27,12 +27,21 @@ const formatHourlyData = (data) => {
     return []
   }
 
+  // Get the current hour index
   const currentHour = new Date().getHours()
+  const currentDate = new Date().setHours(currentHour, 0, 0, 0)
+
+  // Find the index in the API data that corresponds to the current hour
+  const startIndex = data.hourly.time.findIndex(time => 
+    new Date(time).getTime() >= currentDate
+  )
+
+  // Return the next 24 hours of data
   return data.hourly.time
-    .slice(currentHour, currentHour + 24)
+    .slice(startIndex, startIndex + 24)
     .map((time, index) => ({
       hour: new Date(time).getHours(),
-      temperature: Math.round(data.hourly.temperature_2m[currentHour + index])
+      temperature: Math.round(data.hourly.temperature_2m[startIndex + index])
     }))
 }
 
@@ -115,17 +124,21 @@ export default function WeatherStation() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Hourly Temperature for San Jose</CardTitle>
+          <CardTitle>Day By Day Temperature for San Jose</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="w-full">
           <ResponsiveContainer width="100%" height={400}>
-            <LineChart data={hourlyData}>
+            <LineChart 
+              data={hourlyData}
+              margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+            >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis 
                 dataKey="hour" 
                 tickFormatter={(hour) => `${hour}:00`}
               />
               <YAxis 
+                domain={['auto', 'auto']}
                 label={{ value: 'Temperature (°F)', angle: -90, position: 'insideLeft' }}
               />
               <Tooltip 
@@ -136,8 +149,11 @@ export default function WeatherStation() {
               <Line
                 type="monotone"
                 dataKey="temperature"
-                stroke="hsl(var(--primary))"
-                name="Temperature"
+                stroke="#2563eb"
+                strokeWidth={2}
+                dot={false}
+                activeDot={{ r: 6 }}
+                isAnimationActive={true}
               />
             </LineChart>
           </ResponsiveContainer>
